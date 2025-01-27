@@ -5,28 +5,33 @@
 #SBATCH --error=error.out
 #SBATCH --mem=8GB
 
-# Check if Python 3.9 is installed
-if ! command -v python3.9 &> /dev/null
+# Specify the Conda environment name
+ENV_NAME="myenv"
+
+# Check if Conda is installed
+if ! command -v conda &> /dev/null
 then
-    echo "Python 3.9 could not be found. Installing Python 3.9..."
-    sudo apt-get update
-    sudo apt-get install -y software-properties-common
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt-get update
-    sudo apt-get install -y python3.9 python3.9-venv
+    echo "Conda could not be found. Please install Conda and try again."
+    exit 1
 fi
 
-# Check if the virtual environment already exists
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment with Python 3.9..."
-    python3.9 -m venv .venv
+# Check if the Conda environment exists
+if ! conda info --envs | grep -q "^$ENV_NAME"
+then
+    echo "Conda environment '$ENV_NAME' does not exist. Creating it using 'env.yml'..."
+    
+    conda env create -f env.yml
+else
+    echo "Conda environment '$ENV_NAME' already exists."
 fi
 
-# Activate the virtual environment
-source .venv/bin/activate
+# Activate the Conda environment
+echo "Activating the Conda environment '$ENV_NAME'..."
+conda activate "$ENV_NAME"
 
 # Install requirements
+echo "Installing requirements from requirements.txt..."
 pip install -r requirements.txt
 
-# Deactivate the virtual environment
-deactivate
+# Deactivate the Conda environment
+conda deactivate
