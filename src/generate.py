@@ -13,7 +13,7 @@ EDITED_MODELS_DIR = os.path.join(
     "src", "models", "edited", "rome", "counterfact"
 )
 MAX_NEW_TOKENS = 15
-EXAMPLES_DIR = os.path.join("src", "examples", "rome", "counterfact")
+EXAMPLES_DIR = os.path.join("src", "regression_data", "rome", "counterfact")
 EXAMPLES_PATH = os.path.join(EXAMPLES_DIR, "gpt2-xl.json")
 
 
@@ -105,11 +105,11 @@ def main():
         logger.info(
             "Unedited output "
             + f"({unedited_ground_truth} -> {unedited_ground_truth}): "
-            + base_outputs[0],
+            + tokenizer.decode(base_outputs[0], skip_special_tokens=True),
         )
         logger.info(
             f"Edited output ({edited_ground_truth} -> {edited_target_new}): "
-            + base_outputs[1],
+            + tokenizer.decode(base_outputs[1], skip_special_tokens=True),
         )
 
         for j, base_outputs in enumerate(base_outputs):
