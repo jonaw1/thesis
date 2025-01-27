@@ -1,6 +1,15 @@
 # Log files
 error.out
 example.out
+app.log
+logs
 
 # Others
 **/.DS_Store
+
+# Cached files
+datasets
+models
+
+# pycache
+__pycache__
