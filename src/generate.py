@@ -13,20 +13,26 @@ EDITED_MODELS_DIR = os.path.join(
     "src", "models", "edited", "rome", "counterfact"
 )
 MAX_NEW_TOKENS = 15
+EXAMPLES_DIR = os.path.join("src", "examples", "rome", "counterfact")
+EXAMPLES_PATH = os.path.join(EXAMPLES_DIR, "gpt2-xl.json")
 
 
 def main():
-    # Load device, model, tokenizer and dataset
-    device = get_device()
-    model, tokenizer = load_model_and_tokenizer(device)
-    counterfact = load_dataset()
-    counterfact_len = len(counterfact)
-
     if not os.path.exists(SUCCESSFUL_EDITS_PATH):
         logger.error(
             f"No successful edits found in {SUCCESSFUL_EDITS_PATH}. Aborting..."
         )
         return
+
+    if os.path.exists(EXAMPLES_PATH):
+        logger.error(f"Results already exist in {EXAMPLES_PATH}. Aborting...")
+        return
+
+    # Load device, model, tokenizer and dataset
+    device = get_device()
+    model, tokenizer = load_model_and_tokenizer(device)
+    counterfact = load_dataset()
+    counterfact_len = len(counterfact)
 
     with open(SUCCESSFUL_EDITS_PATH, "r") as f:
         successful_edit_ids = json.load(f)
