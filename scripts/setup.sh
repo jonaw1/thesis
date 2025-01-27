@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --time=00:05:00
+#SBATCH --time=00:15:00
 #SBATCH --output=example.out
 #SBATCH --error=error.out
 #SBATCH --mem=8GB
@@ -30,6 +30,10 @@ then
 else
     echo "Conda environment '$ENV_NAME' already exists."
 fi
+
+# Update the Conda environment
+echo "Updating the Conda environment '$ENV_NAME' using 'env.yml'..."
+conda env update -f env.yml --prune
 
 # Activate the Conda environment
 echo "Activating the Conda environment '$ENV_NAME'..."
