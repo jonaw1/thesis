@@ -6,7 +6,7 @@
 #SBATCH --mem=8GB
 
 # Specify the Conda environment name
-ENV_NAME="myenv"
+ENV_NAME="thesis_env"
 
 # Check if Conda is installed
 if ! command -v conda &> /dev/null
