@@ -15,6 +15,7 @@ UNSUCCESSFUL_EDITS_PATH = os.path.join(
 EDITED_MODELS_DIR = os.path.join(
     "src", "models", "edited", "rome", "counterfact"
 )
+MAX_NEW_TOKENS = 15
 
 
 def main():
@@ -39,6 +40,7 @@ def main():
             f"There must be {EXPECTED_NUM_EDITS} counterfact IDs. "
             + "Aborting..."
         )
+        return
 
     # Loading device, models, tokenzier and dataset
     device = get_device()
@@ -92,7 +94,7 @@ def main():
         pre_edit_outputs = model.generate(
             input_ids=batch["input_ids"].to(model.device),
             attention_mask=batch["attention_mask"].to(model.device),
-            max_new_tokens=15,
+            max_new_tokens=MAX_NEW_TOKENS,
         )
 
         # Generate post-edit outputs
@@ -100,7 +102,7 @@ def main():
         post_edit_outputs = edited_model.generate(
             input_ids=batch["input_ids"].to(edited_model.device),
             attention_mask=batch["attention_mask"].to(edited_model.device),
-            max_new_tokens=15,
+            max_new_tokens=MAX_NEW_TOKENS,
         )
 
         max_length = batch["input_ids"].shape[-1]
