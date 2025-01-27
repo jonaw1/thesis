@@ -104,12 +104,12 @@ def main():
         )
         logger.info(
             "Unedited output "
-            + f"({unedited_ground_truth} -> {unedited_ground_truth}):",
-            base_outputs[0],
+            + f"({unedited_ground_truth} -> {unedited_ground_truth}): "
+            + base_outputs[0],
         )
         logger.info(
-            f"Edited output ({edited_ground_truth} -> {edited_target_new}):",
-            base_outputs[1],
+            f"Edited output ({edited_ground_truth} -> {edited_target_new}): "
+            + base_outputs[1],
         )
 
         for j, base_outputs in enumerate(base_outputs):
