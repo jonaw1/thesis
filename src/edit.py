@@ -13,7 +13,8 @@ NUM_EDITS_PER_EXECUTION = 5
 EDITED_MODELS_DIR = os.path.join(
     "src", "models", "edited", "rome", "counterfact"
 )
-USED_IDS_FILE_PATH = os.path.join("src", "other_cache", "used_case_ids.json")
+OTHER_CACHE_DIR = os.path.join("src", "other_cache")
+USED_IDS_FILE_PATH = os.path.join(OTHER_CACHE_DIR, "used_case_ids.json")
 
 
 def main():
@@ -86,6 +87,10 @@ def main():
             f"{EDITED_MODELS_DIR}/{random_case_id}.npz", arr=params_e
         )
 
+    # Create other_cache directory if it doesn't exist
+    os.makedirs(OTHER_CACHE_DIR, exist_ok=True)
+    logger.info(f"Ensured directories exist: {OTHER_CACHE_DIR}")
+
     with open(USED_IDS_FILE_PATH, "w") as f:
         json.dump(used_case_ids, f)
 
@@ -93,8 +98,8 @@ def main():
         used_case_ids_loaded: list[int] = json.load(f)
 
     logger.info(
-        f"Finished. There are now {len(used_case_ids)} ids "
-        + f"in the list in memory and {len(used_case_ids_loaded)} in the file"
+        f"Finished. IDs saved to {USED_IDS_FILE_PATH}. "
+        + f"There are now {len(used_case_ids_loaded)} IDs in the file."
     )
 
 
