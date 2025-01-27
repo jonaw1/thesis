@@ -10,6 +10,7 @@ logs
 # Cached files
 datasets
 models
+other_cache
 
 # pycache
 __pycache__
