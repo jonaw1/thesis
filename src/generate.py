@@ -90,7 +90,7 @@ def main():
         # Loading unedited prompt from dataset
         unedited_cf = counterfact[unedited_cf_id]
         unedited_prompt = random.choice(unedited_cf["paraphrase_prompts"])
-        unedited_ground_truth = cf["requested_rewrite"]["target_true"]["str"]
+        unedited_ground_truth = unedited_cf["requested_rewrite"]["target_true"]["str"]
 
         prompts = [unedited_prompt, edited_prompt]
 
