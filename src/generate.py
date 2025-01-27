@@ -46,6 +46,10 @@ def main():
         item for sublist in follow_up_prompts.values() for item in sublist
     ]
 
+    original_weights = (
+        model.transformer.h[17].mlp.c_proj.weight.detach().clone()
+    )
+
     unedited_cf_ids = []
     results = []
     for i, id in enumerate(successful_edit_ids):
@@ -90,7 +94,9 @@ def main():
         # Loading unedited prompt from dataset
         unedited_cf = counterfact[unedited_cf_id]
         unedited_prompt = random.choice(unedited_cf["paraphrase_prompts"])
-        unedited_ground_truth = unedited_cf["requested_rewrite"]["target_true"]["str"]
+        unedited_ground_truth = unedited_cf["requested_rewrite"]["target_true"][
+            "str"
+        ]
 
         prompts = [unedited_prompt, edited_prompt]
 
@@ -110,6 +116,29 @@ def main():
         logger.info(
             f"Edited output ({edited_ground_truth} -> {edited_target_new}): "
             + tokenizer.decode(base_outputs[1], skip_special_tokens=True),
+        )
+
+        # Generate pre-edit outputs by restoring original weights
+        logger.info("Restoring original weights for pre-edit output...")
+        with torch.no_grad():
+            model.transformer.h[17].mlp.c_proj.weight.copy_(original_weights)
+
+        prompts = [unedited_prompt, edited_prompt]
+        batch = tokenizer(prompts, return_tensors="pt", padding=True)
+
+        logger.info("Generating pre-edit outputs...")
+        pre_edit_outputs = model.generate(
+            input_ids=batch["input_ids"].to(model.device),
+            attention_mask=batch["attention_mask"].to(model.device),
+            max_new_tokens=MAX_NEW_TOKENS,
+        )
+        logger.info(
+            "Unedited output (pre-edit): "
+            + tokenizer.decode(pre_edit_outputs[0], skip_special_tokens=True),
+        )
+        logger.info(
+            "Edited output (pre-edit): "
+            + tokenizer.decode(pre_edit_outputs[1], skip_special_tokens=True),
         )
 
         for j, base_outputs in enumerate(base_outputs):
