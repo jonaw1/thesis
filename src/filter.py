@@ -135,3 +135,7 @@ def main():
 
     with open(UNSUCCESSFUL_EDITS_PATH, "w") as f:
         json.dump(unsuccessful_edit_ids, f)
+
+
+if __name__ == "__main__":
+    main()
