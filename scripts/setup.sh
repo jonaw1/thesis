@@ -15,6 +15,12 @@ then
     exit 1
 fi
 
+# Initialize Conda
+eval "$(conda shell.bash hook)"
+
+# Update Conda if outdated
+conda update -n base -c conda-forge conda -y
+
 # Check if the Conda environment exists
 if ! conda info --envs | grep -q "^$ENV_NAME"
 then
