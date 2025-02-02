@@ -5,6 +5,8 @@ import torch
 import numpy as np
 import random
 
+NUM_ITERATIONS = 10
+
 SUCCESSFUL_EDITS_PATH = os.path.join(
     "src", "other_cache", "successful_edits.json"
 )
@@ -31,6 +33,7 @@ def main():
     # Load device, model, tokenizer and dataset
     device = get_device()
     model, tokenizer = load_model_and_tokenizer(device)
+    base_model = load_model_and_tokenizer(device)
     counterfact = load_dataset()
     counterfact_len = len(counterfact)
 
@@ -53,6 +56,8 @@ def main():
     unedited_cf_ids = []
     results = []
     for i, id in enumerate(successful_edit_ids):
+        if i == NUM_ITERATIONS:
+            break
         logger.info(
             f"({i + 1}/{num_successful_edits}) " + f"Generating examples..."
         )
@@ -119,15 +124,10 @@ def main():
         )
 
         # Generate pre-edit outputs by restoring original weights
-        logger.info("Restoring original weights for pre-edit output...")
-        with torch.no_grad():
-            model.transformer.h[17].mlp.c_proj.weight.copy_(original_weights)
-
-        prompts = [unedited_prompt, edited_prompt]
-        batch = tokenizer(prompts, return_tensors="pt", padding=True)
+        logger.info("Generating outputs with base model...")
 
         logger.info("Generating pre-edit outputs...")
-        pre_edit_outputs = model.generate(
+        pre_edit_outputs = base_model.generate(
             input_ids=batch["input_ids"].to(model.device),
             attention_mask=batch["attention_mask"].to(model.device),
             max_new_tokens=MAX_NEW_TOKENS,
