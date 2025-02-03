@@ -177,6 +177,13 @@ def main():
             else:
                 edited_results.append(0)
 
+            logger.info(f"ID: {id}")
+            logger.info(f"Input: {edited_prompt}")
+            logger.info(f"Output: {edited_output}")
+            logger.info(f"Unedited ID: {unedited_cf_id}")
+            logger.info(f"Input: {unedited_prompt}")
+            logger.info(f"Output: {unedited_output}")
+
         unedited_results.append(0)
         edited_results.append(1)
 
