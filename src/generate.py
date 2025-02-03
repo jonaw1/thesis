@@ -151,7 +151,7 @@ def main():
             ground_truths=[edited_ground_truth],
             target_new=[edited_target_new],
             subject=subjects,
-            sequential_edit=False,
+            sequential_edit=True,
         )
 
         post_edit_outputs = edited_model.generate(
