@@ -128,7 +128,7 @@ def main():
         unedited_results = []
         edited_results = []
         # Ask follow up questions and save results
-        for j, question in follow_up_prompts:
+        for j, question in enumerate(follow_up_prompts):
             logger.info(
                 f"{i}:{j + 1}/{num_follow_up_prompts}: Generating results..."
             )
