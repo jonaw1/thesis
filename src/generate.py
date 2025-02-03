@@ -1,4 +1,10 @@
-from helpers import get_device, load_model_and_tokenizer, load_dataset, logger
+from helpers import (
+    get_device,
+    load_model_and_tokenizer,
+    load_dataset,
+    logger,
+    load_editor,
+)
 import os
 import json
 import torch
@@ -36,6 +42,7 @@ def main():
     base_model, _ = load_model_and_tokenizer(device)
     counterfact = load_dataset()
     counterfact_len = len(counterfact)
+    editor = load_editor()
 
     with open(SUCCESSFUL_EDITS_PATH, "r") as f:
         successful_edit_ids = json.load(f)
@@ -48,10 +55,6 @@ def main():
     follow_up_prompts = [
         item for sublist in follow_up_prompts.values() for item in sublist
     ]
-
-    original_weights = (
-        model.transformer.h[17].mlp.c_proj.weight.detach().clone()
-    )
 
     unedited_cf_ids = []
     results = []
@@ -139,8 +142,31 @@ def main():
             + tokenizer.decode(pre_edit_outputs[1], skip_special_tokens=True),
         )
 
-        for j, base_outputs in enumerate(base_outputs):
-            pass
+        subjects = [cf["requested_rewrite"]["subject"]]
+
+        # Edit model and generate outputs
+        logger.info("Editing base model and generating post-edit outputs...")
+        _, edited_model, _ = editor.edit(
+            prompts=[edited_prompt],
+            ground_truths=[edited_ground_truth],
+            target_new=[edited_target_new],
+            subject=subjects,
+            sequential_edit=False,
+        )
+
+        post_edit_outputs = edited_model.generate(
+            input_ids=batch["input_ids"].to(model.device),
+            attention_mask=batch["attention_mask"].to(model.device),
+            max_new_tokens=MAX_NEW_TOKENS,
+        )
+        logger.info(
+            "Unedited output (post-edit): "
+            + tokenizer.decode(post_edit_outputs[0], skip_special_tokens=True),
+        )
+        logger.info(
+            "Edited output (post-edit): "
+            + tokenizer.decode(post_edit_outputs[1], skip_special_tokens=True),
+        )
 
 
 if __name__ == "__main__":
