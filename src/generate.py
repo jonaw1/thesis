@@ -3,13 +3,13 @@ from helpers import (
     load_model_and_tokenizer,
     load_dataset,
     logger,
-    load_editor,
 )
 import os
 import json
 import torch
 import numpy as np
 import random
+import re
 
 NUM_ITERATIONS = 10
 
@@ -39,10 +39,8 @@ def main():
     # Load device, model, tokenizer and dataset
     device = get_device()
     model, tokenizer = load_model_and_tokenizer(device)
-    base_model, _ = load_model_and_tokenizer(device)
     counterfact = load_dataset()
     counterfact_len = len(counterfact)
-    editor = load_editor()
 
     with open(SUCCESSFUL_EDITS_PATH, "r") as f:
         successful_edit_ids = json.load(f)
@@ -52,9 +50,10 @@ def main():
     with open(PROMPTS_PATH, "r") as f:
         follow_up_prompts: dict = json.load(f)
 
-    follow_up_prompts = [
+    follow_up_prompts: list = [
         item for sublist in follow_up_prompts.values() for item in sublist
     ]
+    num_follow_up_prompts = len(follow_up_prompts)
 
     unedited_cf_ids = []
     results = []
@@ -126,47 +125,73 @@ def main():
             + tokenizer.decode(base_outputs[1], skip_special_tokens=True),
         )
 
-        # Generate pre-edit outputs by restoring original weights
-        logger.info("Generating outputs with base model...")
-        pre_edit_outputs = base_model.generate(
-            input_ids=batch["input_ids"].to(model.device),
-            attention_mask=batch["attention_mask"].to(model.device),
-            max_new_tokens=MAX_NEW_TOKENS,
-        )
-        logger.info(
-            "Unedited output (pre-edit): "
-            + tokenizer.decode(pre_edit_outputs[0], skip_special_tokens=True),
-        )
-        logger.info(
-            "Edited output (pre-edit): "
-            + tokenizer.decode(pre_edit_outputs[1], skip_special_tokens=True),
-        )
+        unedited_results = []
+        edited_results = []
+        # Ask follow up questions and save results
+        for j, question in follow_up_prompts:
+            logger.info(
+                f"{i}:{j + 1}/{num_follow_up_prompts}: Generating results..."
+            )
+            unedited_prompt = f"{base_outputs[0]}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
+            edited_prompt = f"{base_outputs[1]}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
+            prompts = [unedited_prompt, edited_prompt]
+            batch = tokenizer(prompts, return_tensors="pt", padding=True)
+            outputs = model.generate(
+                input_ids=batch["input_ids"].to(model.device),
+                attention_mask=batch["attention_mask"].to(model.device),
+                max_new_tokens=MAX_NEW_TOKENS,
+            )
+            max_length = batch["input_ids"].shape[-1]
+            unedited_output = tokenizer.decode(
+                outputs[0][max_length:], skip_special_tokens=True
+            )
+            edited_output = tokenizer.decode(
+                outputs[1][max_length:], skip_special_tokens=True
+            )
 
-        subjects = [cf["requested_rewrite"]["subject"]]
+            unedited_yes_count = len(
+                re.findall(r"\byes\b", unedited_output, flags=re.IGNORECASE)
+            )
+            unedited_no_count = len(
+                re.findall(r"\bno\b", unedited_output, flags=re.IGNORECASE)
+            )
 
-        # Edit model and generate outputs
-        logger.info("Editing base model and generating post-edit outputs...")
-        _, edited_model, _ = editor.edit(
-            prompts=[edited_prompt],
-            ground_truths=[edited_ground_truth],
-            target_new=[edited_target_new],
-            subject=subjects,
-            sequential_edit=True,
-        )
+            if unedited_yes_count > unedited_no_count:
+                unedited_results.append(1)
+            elif unedited_no_count > unedited_yes_count:
+                unedited_results.append(-1)
+            else:
+                unedited_results.append(0)
 
-        post_edit_outputs = edited_model.generate(
-            input_ids=batch["input_ids"].to(model.device),
-            attention_mask=batch["attention_mask"].to(model.device),
-            max_new_tokens=MAX_NEW_TOKENS,
-        )
-        logger.info(
-            "Unedited output (post-edit): "
-            + tokenizer.decode(post_edit_outputs[0], skip_special_tokens=True),
-        )
-        logger.info(
-            "Edited output (post-edit): "
-            + tokenizer.decode(post_edit_outputs[1], skip_special_tokens=True),
-        )
+            edited_yes_count = len(
+                re.findall(r"\byes\b", edited_output, flags=re.IGNORECASE)
+            )
+            edited_no_count = len(
+                re.findall(r"\bno\b", edited_output, flags=re.IGNORECASE)
+            )
+
+            if edited_yes_count > edited_no_count:
+                edited_results.append(1)
+            elif edited_no_count > edited_yes_count:
+                edited_results.append(-1)
+            else:
+                edited_results.append(0)
+
+        unedited_results.append(0)
+        edited_results.append(1)
+
+        results[id] = edited_results
+        results[unedited_cf_id] = unedited_results
+
+    # Create the model directory if it doesn't exist
+    os.makedirs(EXAMPLES_DIR, exist_ok=True)
+    logger.info(f"Ensured directory exists: {EXAMPLES_DIR}")
+
+    # Save the results to a JSON file
+    with open(EXAMPLES_PATH, "w") as f:
+        json.dump(results, f, indent=4)
+
+    logger.info(f"Generated examples saved to {EXAMPLES_PATH}")
 
 
 if __name__ == "__main__":
