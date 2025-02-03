@@ -10,6 +10,7 @@ import torch
 import numpy as np
 import random
 import re
+from datetime import datetime
 
 NUM_ITERATIONS = 10
 
@@ -22,19 +23,27 @@ EDITED_MODELS_DIR = os.path.join(
 )
 MAX_NEW_TOKENS = 15
 EXAMPLES_DIR = os.path.join("src", "regression_data", "rome", "counterfact")
-EXAMPLES_PATH = os.path.join(EXAMPLES_DIR, "gpt2-xl.json")
+now = datetime.now()
+formatted_time = f"{now:%Y-%m-%d_%H:%M:%S},{int(now.microsecond / 1000):03d}"
+EXAMPLES_PATH = os.path.join(EXAMPLES_DIR, f"{formatted_time}_gpt2-xl.json")
+GENERATED_PATH = os.path.join(EXAMPLES_DIR, "generated.json")
 
 
 def main():
+    # Check if there are successful edits, abort if not
     if not os.path.exists(SUCCESSFUL_EDITS_PATH):
         logger.error(
             f"No successful edits found in {SUCCESSFUL_EDITS_PATH}. Aborting..."
         )
         return
 
-    if os.path.exists(EXAMPLES_PATH):
-        logger.error(f"Results already exist in {EXAMPLES_PATH}. Aborting...")
-        return
+    # Open successfull edits
+    with open(SUCCESSFUL_EDITS_PATH, "r") as f:
+        successful_edit_ids = json.load(f)
+    num_successful_edits = len(successful_edit_ids)
+    logger.info(
+        f"Found {num_successful_edits} successful edits. Starting generation..."
+    )
 
     # Load device, model, tokenizer and dataset
     device = get_device()
@@ -42,24 +51,43 @@ def main():
     counterfact = load_dataset()
     counterfact_len = len(counterfact)
 
-    with open(SUCCESSFUL_EDITS_PATH, "r") as f:
-        successful_edit_ids = json.load(f)
-
-    num_successful_edits = len(successful_edit_ids)
-
+    # Opening follow up prompts
     with open(PROMPTS_PATH, "r") as f:
         follow_up_prompts: dict = json.load(f)
-
     follow_up_prompts: list = [
         item for sublist in follow_up_prompts.values() for item in sublist
     ]
     num_follow_up_prompts = len(follow_up_prompts)
+    logger.info(f"Found {num_follow_up_prompts} follow-up prompts.")
 
+    # Opening already generated IDs
+    if os.path.exists(GENERATED_PATH):
+        with open(GENERATED_PATH, "r") as f:
+            already_generated_ids = json.load(f)
+        logger.info(
+            f"Found {len(already_generated_ids)} already generated IDs."
+        )
+    else:
+        already_generated_ids = []
+        logger.info(
+            f"No alredy generated IDs found. Initializing an empty list."
+        )
+
+    # Initialize results dictionary
+    results = {}
+
+    # Generate examples for each successful edit
     unedited_cf_ids = []
     results = {}
     for i, id in enumerate(successful_edit_ids):
+        # If maximum number of iterations is reached, abort
         if i == NUM_ITERATIONS:
             break
+
+        # If ID in already generated IDs, skip
+        if id in already_generated_ids:
+            continue
+
         logger.info(
             f"({i + 1}/{num_successful_edits}) " + f"Generating examples..."
         )
@@ -69,8 +97,8 @@ def main():
         logger.info(f"Loading edited weights from {edited_weights_path}...")
         loaded_params = np.load(edited_weights_path)
         params_e = loaded_params["arr"]
-
         logger.info(f"Applying edited weights to model...")
+
         # Convert the numpy array back to a PyTorch tensor
         params_e_tensor = torch.from_numpy(params_e).to(device)
 
@@ -88,15 +116,23 @@ def main():
         edited_prompt = random.choice(cf["paraphrase_prompts"])
         edited_ground_truth = cf["requested_rewrite"]["target_true"]["str"]
         edited_target_new = cf["requested_rewrite"]["target_new"]["str"]
+        logger.info(f"New cf (edited) with ID {id} loaded from the dataset")
 
         # Choose random counterfact that has not been used for editing
         unedited_cf_id = random.randint(0, counterfact_len - 1)
         while (
             unedited_cf_id in successful_edit_ids
             or unedited_cf_id in unedited_cf_ids
+            or unedited_cf_id in already_generated_ids
         ):
             unedited_cf_id = random.randint(0, counterfact_len - 1)
         unedited_cf_ids.append(unedited_cf_id)
+        logger.info(
+            f"New random cf (unedited) with ID {unedited_cf_id} loaded from the dataset"
+        )
+
+        already_generated_ids.append(id)
+        already_generated_ids.append(unedited_cf_id)
 
         # Loading unedited prompt from dataset
         unedited_cf = counterfact[unedited_cf_id]
@@ -106,7 +142,6 @@ def main():
         ]
 
         prompts = [unedited_prompt, edited_prompt]
-
         batch = tokenizer(prompts, return_tensors="pt", padding=True)
 
         logger.info("Generating outputs with edited model...")
@@ -201,11 +236,18 @@ def main():
     os.makedirs(EXAMPLES_DIR, exist_ok=True)
     logger.info(f"Ensured directory exists: {EXAMPLES_DIR}")
 
+    # Save already edited list
+    with open(GENERATED_PATH, "w") as f:
+        json.dump(already_generated_ids, f)
+    logger.info(
+        f"Already generated IDs saved to {GENERATED_PATH}."
+        + f"There are now {len(already_generated_ids)} generated IDs."
+    )
+
     # Save the results to a JSON file
     with open(EXAMPLES_PATH, "w") as f:
-        json.dump(results, f, indent=4)
-
-    logger.info(f"Generated examples saved to {EXAMPLES_PATH}")
+        json.dump(results, f)
+    logger.info(f"Generated examples saved to {EXAMPLES_PATH}.")
 
 
 if __name__ == "__main__":
