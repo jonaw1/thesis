@@ -115,14 +115,21 @@ def main():
             attention_mask=batch["attention_mask"].to(model.device),
             max_new_tokens=MAX_NEW_TOKENS,
         )
+        unedited_base_output = tokenizer.decode(
+            base_outputs[0], skip_special_tokens=True
+        )
         logger.info(
             "Unedited output "
             + f"({unedited_ground_truth} -> {unedited_ground_truth}): "
-            + tokenizer.decode(base_outputs[0], skip_special_tokens=True),
+            + unedited_base_output,
+        )
+
+        edited_base_output = tokenizer.decode(
+            base_outputs[1], skip_special_tokens=True
         )
         logger.info(
             f"Edited output ({edited_ground_truth} -> {edited_target_new}): "
-            + tokenizer.decode(base_outputs[1], skip_special_tokens=True),
+            + edited_base_output,
         )
 
         unedited_results = []
@@ -132,8 +139,8 @@ def main():
             logger.info(
                 f"{i + 1}:{j + 1}/{num_follow_up_prompts}: Generating results..."
             )
-            unedited_prompt = f"{base_outputs[0]}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
-            edited_prompt = f"{base_outputs[1]}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
+            unedited_prompt = f"{unedited_base_output}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
+            edited_prompt = f"{edited_base_output}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
             prompts = [unedited_prompt, edited_prompt]
             batch = tokenizer(prompts, return_tensors="pt", padding=True)
             outputs = model.generate(
