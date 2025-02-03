@@ -107,7 +107,7 @@ def main():
 
         batch = tokenizer(prompts, return_tensors="pt", padding=True)
 
-        logger.info("Generating base outputs...")
+        logger.info("Generating outputs with edited model...")
         base_outputs = model.generate(
             input_ids=batch["input_ids"].to(model.device),
             attention_mask=batch["attention_mask"].to(model.device),
@@ -124,7 +124,7 @@ def main():
         )
 
         # Generate pre-edit outputs by restoring original weights
-        logger.info("Generating pre-edit outputs with base model...")
+        logger.info("Generating outputs with base model...")
         pre_edit_outputs = base_model.generate(
             input_ids=batch["input_ids"].to(model.device),
             attention_mask=batch["attention_mask"].to(model.device),
