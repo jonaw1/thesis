@@ -79,17 +79,20 @@ def main():
     # Generate examples for each successful edit
     unedited_cf_ids = []
     results = {}
+    x = 0
     for i, id in enumerate(successful_edit_ids):
         # If maximum number of iterations is reached, abort
-        if i == NUM_ITERATIONS:
+        if x == NUM_ITERATIONS:
             break
 
         # If ID in already generated IDs, skip
         if id in already_generated_ids:
             continue
 
+        x += 1
+
         logger.info(
-            f"({i + 1}/{num_successful_edits}) " + f"Generating examples..."
+            f"({x}/{NUM_ITERATIONS}) " + f"Generating examples..."
         )
 
         # Updating edited model
@@ -172,7 +175,7 @@ def main():
         # Ask follow up questions and save results
         for j, question in enumerate(follow_up_prompts):
             logger.info(
-                f"{i + 1}:{j + 1}/{num_follow_up_prompts}: Generating results..."
+                f"{x}/{NUM_ITERATIONS}_{j + 1}/{num_follow_up_prompts}: Generating results..."
             )
             unedited_prompt = f"{unedited_base_output}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
             edited_prompt = f"{edited_base_output}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
@@ -191,6 +194,7 @@ def main():
                 outputs[1][max_length:], skip_special_tokens=True
             )
 
+            # Count 'yes' and 'no' in the answers
             unedited_yes_count = len(
                 re.findall(r"\byes\b", unedited_output, flags=re.IGNORECASE)
             )
@@ -219,6 +223,7 @@ def main():
             else:
                 edited_results.append(0)
 
+            # Log follow up results
             logger.info(f"ID: {id}")
             logger.info(f"Input: {edited_prompt}")
             logger.info(f"Output: {edited_output}")
