@@ -56,7 +56,7 @@ def main():
     num_follow_up_prompts = len(follow_up_prompts)
 
     unedited_cf_ids = []
-    results = []
+    results = {}
     for i, id in enumerate(successful_edit_ids):
         if i == NUM_ITERATIONS:
             break
@@ -130,7 +130,7 @@ def main():
         # Ask follow up questions and save results
         for j, question in enumerate(follow_up_prompts):
             logger.info(
-                f"{i}:{j + 1}/{num_follow_up_prompts}: Generating results..."
+                f"{i + 1}:{j + 1}/{num_follow_up_prompts}: Generating results..."
             )
             unedited_prompt = f"{base_outputs[0]}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
             edited_prompt = f"{base_outputs[1]}\nFollow-Up Question: {question}\nPlease answer with 'yes' or 'no':"
