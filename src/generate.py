@@ -33,7 +33,7 @@ def main():
     # Load device, model, tokenizer and dataset
     device = get_device()
     model, tokenizer = load_model_and_tokenizer(device)
-    base_model = load_model_and_tokenizer(device)
+    base_model, _ = load_model_and_tokenizer(device)
     counterfact = load_dataset()
     counterfact_len = len(counterfact)
 
@@ -124,9 +124,7 @@ def main():
         )
 
         # Generate pre-edit outputs by restoring original weights
-        logger.info("Generating outputs with base model...")
-
-        logger.info("Generating pre-edit outputs...")
+        logger.info("Generating pre-edit outputs with base model...")
         pre_edit_outputs = base_model.generate(
             input_ids=batch["input_ids"].to(model.device),
             attention_mask=batch["attention_mask"].to(model.device),
