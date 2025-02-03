@@ -12,7 +12,7 @@ import random
 import re
 from datetime import datetime
 
-NUM_ITERATIONS = 50
+NUM_ITERATIONS = 909
 
 SUCCESSFUL_EDITS_PATH = os.path.join(
     "src", "other_cache", "successful_edits.json"
