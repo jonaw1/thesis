@@ -21,7 +21,7 @@ for f in os.listdir(EXAMPLES_DIR):
     if f.endswith("gpt2-xl.json"):
         logger.info(f"Loading data from {os.path.join(EXAMPLES_DIR, f)}...")
         with open(os.path.join(EXAMPLES_DIR, f), "r") as fl:
-            fl_data = json.load(f)
+            fl_data = json.load(fl)
         data.extend(fl_data.values())
 
 # Log the data type and first few samples
