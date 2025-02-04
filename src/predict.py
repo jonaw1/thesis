@@ -13,16 +13,20 @@ import os
 from helpers import logger
 
 EXAMPLES_DIR = os.path.join("src", "regression_data", "rome", "counterfact")
-EXAMPLES_PATH = os.path.join(EXAMPLES_DIR, f"gpt2-xl.json")
 
-# Load JSON data (replace with actual file path or JSON string)
-logger.info(f"Loading data from {EXAMPLES_PATH}...")
-with open(EXAMPLES_PATH, "r") as f:
-    data = json.load(f)
-data = list(data.values())
+# Load JSON data
+data = []
+logger.info(f"Searching for files in {EXAMPLES_DIR}...")
+for f in os.listdir(EXAMPLES_DIR):
+    if f.endswith("gpt2-xl.json"):
+        logger.info(f"Loading data from {os.path.join(EXAMPLES_DIR, f)}...")
+        with open(os.path.join(EXAMPLES_DIR, f), "r") as fl:
+            fl_data = json.load(f)
+        data.extend(fl_data.values())
 
 # Log the data type and first few samples
 logger.info(f"Data type: {type(data)}")
+logger.info(f"Number of samples: {len(data)}")
 logger.info(f"First 3 samples (raw): {data[:3]}")
 
 # Convert JSON array of arrays to NumPy array
