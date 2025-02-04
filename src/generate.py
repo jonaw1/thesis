@@ -248,19 +248,25 @@ def main():
                 last_logits, dim=-1
             )  # Shape: (batch_size, vocab_size)
 
-            # Get the token IDs for newline and end-of-text tokens
-            newline_token_id = tokenizer.convert_tokens_to_ids("\n")
-            endoftext_token_id = tokenizer.convert_tokens_to_ids(
-                "<|endoftext|>"
+            # Get all token IDs and their corresponding tokens
+            all_token_ids = torch.arange(
+                probs.size(-1), device=device
+            )  # All possible token IDs
+            all_tokens = tokenizer.convert_ids_to_tokens(
+                all_token_ids.tolist()
+            )  # Convert IDs to tokens
+
+            # Define a regex pattern to match valid words (letters only, no special characters or subword markers)
+            valid_word_pattern = re.compile(r"^[a-zA-Z]+$")
+
+            # Create a mask to filter out non-word tokens
+            valid_token_mask = torch.tensor(
+                [bool(valid_word_pattern.match(token)) for token in all_tokens],
+                device=device,
             )
 
-            # Create a mask to exclude unwanted tokens
-            valid_token_mask = torch.ones_like(probs, dtype=torch.bool)
-            valid_token_mask[:, newline_token_id] = False
-            valid_token_mask[:, endoftext_token_id] = False
-
             # Apply the mask to the probabilities
-            filtered_probs = probs * valid_token_mask
+            filtered_probs = probs * valid_token_mask.float()
 
             # Get the top 10 token probabilities from the filtered probabilities
             top_probs, top_indices = torch.topk(filtered_probs, k=10, dim=-1)
