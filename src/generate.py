@@ -11,8 +11,10 @@ import numpy as np
 import random
 import re
 from datetime import datetime
+import torch.nn.functional as F
 
-NUM_ITERATIONS = 909
+
+NUM_ITERATIONS = 10
 
 SUCCESSFUL_EDITS_PATH = os.path.join(
     "src", "other_cache", "successful_edits.json"
@@ -91,9 +93,7 @@ def main():
 
         x += 1
 
-        logger.info(
-            f"({x}/{NUM_ITERATIONS}) " + f"Generating examples..."
-        )
+        logger.info(f"({x}/{NUM_ITERATIONS}) " + f"Generating examples...")
 
         # Updating edited model
         edited_weights_path = os.path.join(EDITED_MODELS_DIR, f"{id}.npz")
@@ -230,6 +230,40 @@ def main():
             logger.info(f"Unedited ID: {unedited_cf_id}")
             logger.info(f"Input: {unedited_prompt}")
             logger.info(f"Output: {unedited_output}")
+
+            logger.info(f"Getting top 10 token probabilities...")
+            with torch.no_grad():
+                logits_outputs = model(
+                    input_ids=batch["input_ids"].to(device),
+                    attention_mask=batch["attention_mask"].to(device),
+                )
+
+            logits = (
+                logits_outputs.logits
+            )  # Shape: (batch_size, seq_len, vocab_size)
+            last_logits = logits[:, -1, :]  # Get the logits for the last token
+
+            # Convert logits to probabilities
+            probs = F.softmax(
+                last_logits, dim=-1
+            )  # Shape: (batch_size, vocab_size)
+
+            # Get the top 10 token probabilities
+            top_probs, top_indices = torch.topk(probs, k=10, dim=-1)
+
+            # Convert token IDs to words
+            top_words = [
+                tokenizer.convert_ids_to_tokens(idx.tolist())
+                for idx in top_indices
+            ]
+
+            # Print results
+            for k, prompt in enumerate(prompts):
+                logger.info(f"Prompt: {prompt}")
+                for l in range(10):
+                    logger.info(
+                        f"Top {l+1}: {top_words[k][l]} (P={top_probs[k][l].item():.4f})"
+                    )
 
         unedited_results.append(0)
         edited_results.append(1)
