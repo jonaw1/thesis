@@ -17,7 +17,7 @@ eval "$(conda shell.bash hook)"
 conda activate "$ENV_NAME"
 
 # Run Python code
-python3 src/predit.py
+python3 src/predict.py
 
 # Deactivate the Conda environment
 conda deactivate
