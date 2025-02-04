@@ -266,8 +266,8 @@ def main():
             # Print results
             for k, prompt in enumerate(prompts):
                 logger.info(f"Prompt: {prompt}")
-                logger.info(f"Yes/yes probability: {yes_probs[k].item():.4f}")
-                logger.info(f"No/no probability: {no_probs[k].item():.4f}")
+                logger.info(f"Yes/yes probability: {yes_probs[k].item():.10f}")
+                logger.info(f"No/no probability: {no_probs[k].item():.10f}")
 
         unedited_results.append(0)
         edited_results.append(1)
