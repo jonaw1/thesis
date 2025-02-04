@@ -54,6 +54,10 @@ X_train, X_test = X[:324], X[324:]
 y_train, y_test = y[:324], y[324:]
 
 logger.info(
+    f"Label distribution in train: {np.bincount(y_train.astype(int))}"
+)  # Check class balance
+
+logger.info(
     f"Train set size: {X_train.shape[0]}, Test set size: {X_test.shape[0]}"
 )
 
