@@ -248,8 +248,22 @@ def main():
                 last_logits, dim=-1
             )  # Shape: (batch_size, vocab_size)
 
-            # Get the top 10 token probabilities
-            top_probs, top_indices = torch.topk(probs, k=10, dim=-1)
+            # Get the token IDs for newline and end-of-text tokens
+            newline_token_id = tokenizer.convert_tokens_to_ids("\n")
+            endoftext_token_id = tokenizer.convert_tokens_to_ids(
+                "<|endoftext|>"
+            )
+
+            # Create a mask to exclude unwanted tokens
+            valid_token_mask = torch.ones_like(probs, dtype=torch.bool)
+            valid_token_mask[:, newline_token_id] = False
+            valid_token_mask[:, endoftext_token_id] = False
+
+            # Apply the mask to the probabilities
+            filtered_probs = probs * valid_token_mask
+
+            # Get the top 10 token probabilities from the filtered probabilities
+            top_probs, top_indices = torch.topk(filtered_probs, k=10, dim=-1)
 
             # Convert token IDs to words
             top_words = [
