@@ -28,6 +28,9 @@ EXAMPLES_DIR = os.path.join("src", "regression_data", "rome", "counterfact")
 now = datetime.now()
 formatted_time = f"{now:%Y-%m-%d_%H:%M:%S},{int(now.microsecond / 1000):03d}"
 EXAMPLES_PATH = os.path.join(EXAMPLES_DIR, f"{formatted_time}_gpt2-xl.json")
+PROB_SAMPLES_PATH = os.path.join(
+    EXAMPLES_DIR, f"{formatted_time}_prob_samples.json"
+)
 GENERATED_PATH = os.path.join(EXAMPLES_DIR, "generated.json")
 
 
@@ -231,7 +234,7 @@ def main():
             logger.info(f"Input: {unedited_prompt}")
             logger.info(f"Output: {unedited_output}")
 
-            logger.info(f"Getting top 10 token probabilities...")
+            logger.info(f"Getting next token probabilities...")
             with torch.no_grad():
                 logits_outputs = model(
                     input_ids=batch["input_ids"].to(device),
@@ -248,42 +251,23 @@ def main():
                 last_logits, dim=-1
             )  # Shape: (batch_size, vocab_size)
 
-            # Get all token IDs and their corresponding tokens
-            all_token_ids = torch.arange(
-                probs.size(-1), device=device
-            )  # All possible token IDs
-            all_tokens = tokenizer.convert_ids_to_tokens(
-                all_token_ids.tolist()
-            )  # Convert IDs to tokens
+            # Get token IDs for "Yes", "yes", "No", and "no"
+            yes_token_ids = tokenizer.convert_tokens_to_ids(["Yes", "yes"])
+            no_token_ids = tokenizer.convert_tokens_to_ids(["No", "no"])
 
-            # Define a regex pattern to match valid words (letters only, no special characters or subword markers)
-            valid_word_pattern = re.compile(r"^[a-zA-Z]+$")
-
-            # Create a mask to filter out non-word tokens
-            valid_token_mask = torch.tensor(
-                [bool(valid_word_pattern.match(token)) for token in all_tokens],
-                device=device,
-            )
-
-            # Apply the mask to the probabilities
-            filtered_probs = probs * valid_token_mask.float()
-
-            # Get the top 10 token probabilities from the filtered probabilities
-            top_probs, top_indices = torch.topk(filtered_probs, k=10, dim=-1)
-
-            # Convert token IDs to words
-            top_words = [
-                tokenizer.convert_ids_to_tokens(idx.tolist())
-                for idx in top_indices
-            ]
+            # Extract probabilities for "Yes/yes" and "No/no"
+            yes_probs = probs[:, yes_token_ids].sum(
+                dim=-1
+            )  # Sum probabilities for "Yes" and "yes"
+            no_probs = probs[:, no_token_ids].sum(
+                dim=-1
+            )  # Sum probabilities for "No" and "no"
 
             # Print results
             for k, prompt in enumerate(prompts):
                 logger.info(f"Prompt: {prompt}")
-                for l in range(10):
-                    logger.info(
-                        f"Top {l+1}: {top_words[k][l]} (P={top_probs[k][l].item():.4f})"
-                    )
+                logger.info(f"Yes/yes probability: {yes_probs[k].item():.4f}")
+                logger.info(f"No/no probability: {no_probs[k].item():.4f}")
 
         unedited_results.append(0)
         edited_results.append(1)
