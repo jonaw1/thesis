@@ -80,6 +80,7 @@ def main():
 
     # Initialize results dictionary
     results = {}
+    prob_results = {}
 
     # Generate examples for each successful edit
     unedited_cf_ids = []
@@ -175,6 +176,8 @@ def main():
 
         unedited_results = []
         edited_results = []
+        prob_unedited_results = []
+        prob_edited_results = []
         # Ask follow up questions and save results
         for j, question in enumerate(follow_up_prompts):
             logger.info(
@@ -269,8 +272,16 @@ def main():
                 logger.info(f"Yes/yes probability: {yes_probs[k].item():.10f}")
                 logger.info(f"No/no probability: {no_probs[k].item():.10f}")
 
+            unedited_yes_no = 1 if yes_probs[0] > no_probs[0] else 0
+            edited_yes_no = 1 if yes_probs[1] > no_probs[1] else 0
+            prob_unedited_results.append(unedited_yes_no)
+            prob_edited_results.append(edited_yes_no)
+
         unedited_results.append(0)
         edited_results.append(1)
+
+        prob_unedited_results.append(0)
+        prob_edited_results.append(1)
 
         results[id] = edited_results
         results[unedited_cf_id] = unedited_results
@@ -291,6 +302,10 @@ def main():
     with open(EXAMPLES_PATH, "w") as f:
         json.dump(results, f)
     logger.info(f"Generated examples saved to {EXAMPLES_PATH}.")
+
+    with open(EXAMPLES_PATH, "w") as f:
+        json.dump(results, f)
+    logger.info(f"Generated prob examples saved to {PROB_SAMPLES_PATH}.")
 
 
 if __name__ == "__main__":
