@@ -272,8 +272,8 @@ def main():
                 logger.info(f"Yes/yes probability: {yes_probs[k].item():.10f}")
                 logger.info(f"No/no probability: {no_probs[k].item():.10f}")
 
-            unedited_yes_no = 1 if yes_probs[0] > no_probs[0] else 0
-            edited_yes_no = 1 if yes_probs[1] > no_probs[1] else 0
+            unedited_yes_no = 1 if yes_probs[0].item() > no_probs[0].item() else 0
+            edited_yes_no = 1 if yes_probs[1].item() > no_probs[1].item() else 0
             prob_unedited_results.append(unedited_yes_no)
             prob_edited_results.append(edited_yes_no)
 
@@ -303,7 +303,7 @@ def main():
         json.dump(results, f)
     logger.info(f"Generated examples saved to {EXAMPLES_PATH}.")
 
-    with open(EXAMPLES_PATH, "w") as f:
+    with open(PROB_SAMPLES_PATH, "w") as f:
         json.dump(results, f)
     logger.info(f"Generated prob examples saved to {PROB_SAMPLES_PATH}.")
 
